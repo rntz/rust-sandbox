@@ -3,7 +3,6 @@
 
 use comm_util;
 use future;
-use iter;
 use mapreduce;
 use std;
 
