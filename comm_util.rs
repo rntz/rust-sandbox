@@ -22,3 +22,9 @@ fn spawn_bidir<T:send, U:send>(f: fn~(chan<T>, port<U>)) -> (port<T>, chan<U>) {
     let to_child = spawn_sink({|from_parent| f(to_parent, from_parent) });
     ret (from_child, to_child);
 }
+
+// Spawns a communicating pair of child tasks.
+fn spawn_pair<T:send>(src: fn~(chan<T>), sink: fn~(port<T>)) {
+    let to_sink = spawn_sink(sink);
+    task::spawn() {|| src(to_sink) };
+}
