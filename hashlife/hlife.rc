@@ -1,7 +1,0 @@
-#[link(name="hlife",
-       vers="0.0")
- ];
-
-#[desc = "Hash life",
-  license = "WTFPL 2.0",
-  author = "Michael 'rntz' Arntzenius"];
