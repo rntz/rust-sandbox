@@ -1,9 +1,6 @@
 use option::Option;
 use either::{Either,Left,Right};
 
-extern mod std;
-use std::cell::{Cell,empty_cell};
-
 type Stream<T> = fn@() -> Stream_<T>;
 enum Stream_<T> {
   Empty,
