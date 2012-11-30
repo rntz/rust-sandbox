@@ -42,7 +42,6 @@ impl Term: ToStr {
 
 fn term_to_str(t: @Term) -> ~str { (*t).to_str() }
 
-// warning: reads until eof
 fn term_from_str(s: ~str) -> Option<@Term> {
 
   fn puint(s: &[char], i: uint) -> Option<(uint,uint)> {
