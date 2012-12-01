@@ -1,9 +1,4 @@
-#[crate_type = "lib"];
-#[link(name="iter", vers="0.0", author="rntz")];
-
-import option::option;
-
-fn forl<T:copy>(init: T, next: fn(T)->T, end: fn(T)->bool, block: fn(T))
+fn forl<T:Copy>(init: T, next: fn(T)->T, end: fn(T)->bool, block: fn(T))
 {
     let mut x = init;
     loop {
@@ -19,7 +14,7 @@ fn repeat(n: uint, f: fn(uint)) {
 }
 
 fn range(from: uint, to: uint, by: int, f: fn(uint)) {
-    if from == to { ret }
+    if from == to { return }
     assert if from < to {by > 0} else {by < 0};
 
     let mut i = from;
@@ -31,7 +26,7 @@ fn range(from: uint, to: uint, by: int, f: fn(uint)) {
 }
 
 fn rangei(from: int, to: int, by: int, f: fn(int)) {
-    if from == to { ret }
+    if from == to { return }
     assert if from < to {by > 0} else {by < 0};
 
     let mut i = from;

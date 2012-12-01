@@ -1,0 +1,14 @@
+#[link(name="rutil",
+       vers="0.0",
+       author = "Michael 'rntz' Arntzenius <daekharel@gmail.com>",
+       uuid="e7e1e22d-8bb2-4942-95ac-fb126a9a2ba9",
+       url="https://github.com/rntz/rust-sandbox")];
+
+#[author = "Michael 'rntz' Arntzenius <daekharel@gmail.com>"];
+#[comment = "Miscellaneous utilities"];
+#[license = "WTFPL 2.0"];
+#[crate_type = "lib"];
+
+pub mod stream;
+pub mod iter;
+pub mod order;

@@ -13,8 +13,8 @@ impl Order: ToStr {
 }
 
 impl Order: Eq {
-    pure fn eq(x: &Order) -> bool {
-        match (self, *x) {
+    pure fn eq(&self, x: &Order) -> bool {
+        match (*self, *x) {
             (LT,LT) => true,
             (EQ,EQ) => true,
             (GT,GT) => true,
@@ -22,7 +22,7 @@ impl Order: Eq {
         }
     }
 
-    pure fn ne(x: &Order) -> bool { !self.eq(x) }
+    pure fn ne(&self, x: &Order) -> bool { !self.eq(x) }
 
 }
 
@@ -31,8 +31,8 @@ fn compare<T:Eq Ord>(x: &const T, y: &const T) -> Order {
 }
 
 impl Order: Ord {
-    pure fn le(x: &Order) -> bool {
-        match (self, *x) {
+    pure fn le(&self, x: &Order) -> bool {
+        match (*self, *x) {
             (LT,_) => true,
             (EQ,EQ) => true,
             (EQ,GT) => true,
@@ -40,9 +40,7 @@ impl Order: Ord {
             _ => false
         }
     }
-    pure fn ge(x: &Order) -> bool { (*x).le(&self) }
-    pure fn lt(x: &Order) -> bool { !self.ge(x) }
-    pure fn gt(x: &Order) -> bool { !self.le(x) }
+    pure fn ge(&self, x: &Order) -> bool { x.le(self) }
+    pure fn lt(&self, x: &Order) -> bool { !self.ge(x) }
+    pure fn gt(&self, x: &Order) -> bool { !self.le(x) }
 }
-
-fn main() {}
