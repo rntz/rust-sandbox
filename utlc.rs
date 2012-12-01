@@ -5,13 +5,14 @@ use option::{Option,map_consume};
 use char::{is_whitespace,is_digit};
 use tuple::{CopyableTuple};
 
-// binding is encoded using DeBruijn indices
+// ---------- Untyped lambda calculus language ----------
 enum Term {
   Var(uint),
   Lam(@Term),
   App(@Term, @Term),
 }
 
+// ===== Stringification
 impl Term: ToStr {
   pure fn to_str() -> ~str {
     match self {
@@ -40,8 +41,13 @@ impl Term: ToStr {
   }
 }
 
+pub fn is_val(t: @Term) -> bool {
+  match *t { Lam(_) => true, _ => false }
+}
+
 fn term_to_str(t: @Term) -> ~str { (*t).to_str() }
 
+// ===== Parsing
 fn term_from_str(s: ~str) -> Option<@Term> {
 
   fn puint(s: &[char], i: uint) -> Option<(uint,uint)> {
@@ -98,43 +104,104 @@ fn term_from_str(s: ~str) -> Option<@Term> {
   }
 }
 
-// For closure-based interpretation
-enum Val {
-  Closure(~[@Val], @Term),
-}
 
-impl Val: ToStr {
-  pure fn to_str() -> ~str {
-    match self {
-      Closure(cx, term) => fmt!("Closure(%s, %s)", cx.to_str(), term.to_str()),
+// ---------- Substitution-based evaluation ----------
+mod subst {
+  // Substitutes `t' for 0 in `body'.
+  pub fn subst(t: @Term, body: @Term) -> @Term { subst_for(0, t, body) }
+
+  // Substitutes `t' for `var' in `body'.
+  pub fn subst_for(var: uint, t: @Term, body: @Term) -> @Term {
+    match *body {
+      Var(i) => if i == var {t} else {@Var(if i < var {i} else {i-1})},
+      Lam(exp) => @Lam(subst_for(var+1, lift(t), exp)),
+      App(e1, e2) => @App(subst_for(var, t, e1), subst_for(var, t, e2)),
+    }
+  }
+
+  pub fn lift(t: @Term) -> @Term { lift_from(0, t) }
+
+  pub fn lift_from(from: uint, t: @Term) -> @Term {
+    @match *t {
+      Var(i) => Var(if i < from {i} else {i+1}),
+      Lam(e) => Lam(lift_from(from+1, e)),
+      App(e1, e2) => App(lift_from(from, e1), lift_from(from, e2)),
+    }
+  }
+
+  pub enum Step {
+    Steps(@Term),   // Steps(t) where t is the term it steps to
+    IsLam(@Term),   // IsLam(body) where body is the body of the Lam it steps to
+  }
+
+  pub fn step(t: @Term) -> Step {
+    match *t {
+      Var(_) => fail ~"cannot step open terms",
+      Lam(body) => IsLam(body),
+      App(e1, e2) => Steps(match step(e1) {
+        Steps(e1s) => @App(e1s, e2),
+        IsLam(body) => match step(e2) {
+          Steps(e2s) => @App(e1, e2s),
+          IsLam(_) => subst(e2, body),
+        },
+      }),
+    }
+  }
+
+  pub fn eval(t: @Term) -> @Term {
+    match *t {
+      Var(_) => t,
+      Lam(_) => t,
+      App(e1, e2) => {
+        match (eval(e1), eval(e2)) {
+          (@Lam(body), e2v) => eval(subst(e2v, body)),
+          // cannot evaluate further for some reason (eg. got a free var in
+          // application position)
+          (e1v, e2v) => @App(e1v, e2v),
+        }
+      }
     }
   }
 }
 
-// Evaluation
-fn evaluate(t: @Term) -> @Val {
-  let x = ~[];
-  let r = eval(x, t);
-  log(info, x);
-  r
-}
+// ---------- Closure-based evaluation ----------
+mod closure {
+  pub enum Val {
+    Closure(~[@Val], @Term),
+  }
 
-fn lookup(cx: &[@Val], v: uint) -> @Val { cx[cx.len() - v - 1] }
-fn extend(cx: ~[@Val], v: @Val) -> ~[@Val] {
-  let mut r = move cx;
-  r.push(v);
-  move r
-}
+  pub impl Val: ToStr {
+    pure fn to_str() -> ~str {
+      match self {
+        Closure(cx, term) => fmt!("Closure(%s, %s)", cx.to_str(), term.to_str()),
+      }
+    }
+  }
 
-fn eval(cx: &[@Val], t: @Term) -> @Val {
-  match *t {
-    Var(v) => lookup(cx, v),
-    // is there a better way to copy cx?
-    Lam(body) => @Closure(vec::from_slice(cx), body),
-    App(e1, e2) => {
-      let @Closure(fn_ctx, body) = eval(cx, e1);
-      let arg = eval(cx, e2);
-      eval(extend(move fn_ctx, arg), body)
+  pub fn eval(t: @Term) -> @Val {
+    let x = ~[];
+    let r = eval_in(x, t);
+    log(info, x);               //FIXME
+    r
+  }
+
+  fn lookup(cx: &[@Val], v: uint) -> @Val { cx[cx.len() - v - 1] }
+  fn extend(cx: ~[@Val], v: @Val) -> ~[@Val] {
+    let mut r = move cx;
+    r.push(v);
+    move r
+  }
+
+  pub fn eval_in(cx: &[@Val], t: @Term) -> @Val {
+    match *t {
+      Var(v) => lookup(cx, v),
+      // is there a better way to copy cx?
+      Lam(body) => @Closure(vec::from_slice(cx), body),
+      App(e1, e2) => {
+        let @Closure(fn_ctx, body) = eval_in(cx, e1);
+        let arg = eval_in(cx, e2);
+        eval_in(extend(move fn_ctx, arg), body)
+      }
     }
   }
 }
@@ -146,7 +213,8 @@ fn main() {
       Some(t) => t,
       None => {break}
     };
-    let v = evaluate(t);
-    io::println(v.to_str());
+    //let v = closure::eval(t);
+    let v = subst::eval(t);
+    io::println((*v).to_str());
   }
 }

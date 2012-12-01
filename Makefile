@@ -1,7 +1,7 @@
 RUSTCFLAGS:=-g -L .
 
 %: %.rs
-	rustc $(RUSTCFLAGS) . $<
+	rustc $(RUSTCFLAGS) $<
 
 .PHONY: rutil
 rutil:
