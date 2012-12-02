@@ -3,17 +3,19 @@ use either::{Either,Left,Right};
 
 extern mod std;
 
+// this should probably be "pure fn@() -> Stream_<T>", but until it's easy to
+// make pure lambdas, this would be *extremely* obnoxious.
 type Stream<T> = fn@() -> Stream_<T>;
 enum Stream_<T> {
   Empty,
   Cons(T, Stream<T>)
 }
 
-fn cons<T:Copy Owned>(x: T, xs: Stream<T>) -> Stream<T> {
+pure fn cons<T:Copy Owned>(x: T, xs: Stream<T>) -> Stream<T> {
   fn@() -> Stream_<T> { Cons(x,xs) }
 }
 
-fn tail<T>(s: Stream<T>) -> Stream<T> {
+pure fn tail<T>(s: Stream<T>) -> Stream<T> {
   || match s() {
     Empty => fail ~"tried to take tail of empty stream",
     Cons(_, rest) => rest()
@@ -52,7 +54,7 @@ fn eachi<T>(s: Stream<T>, f: fn&(uint, &T) -> bool) {
   }
 }
 
-fn filter<T>(s: Stream<T>, pred: fn@(&T) -> bool) -> Stream<T> {
+pure fn filter<T>(s: Stream<T>, pred: fn@(&T) -> bool) -> Stream<T> {
   || match move s() {
     Empty => Empty,
     Cons(move x, move xs) =>
@@ -61,7 +63,7 @@ fn filter<T>(s: Stream<T>, pred: fn@(&T) -> bool) -> Stream<T> {
   }
 }
 
-fn map<T,U>(s: Stream<T>, f: fn@(&T) -> U) -> Stream<U> {
+pure fn map<T,U>(s: Stream<T>, f: fn@(&T) -> U) -> Stream<U> {
   || match s() {
     Empty => Empty,
     Cons(x, xs) => Cons(f(&x), map(xs,f)),
@@ -69,10 +71,10 @@ fn map<T,U>(s: Stream<T>, f: fn@(&T) -> U) -> Stream<U> {
 }
 
 fn map_consume<T:Copy,U>(s: Stream<T>, f: fn@(T) -> U) -> Stream<U> {
-  do map(s) |x| { f(*x) }
+  map(s, |x| f(*x))
 }
 
-fn map2<T,U,V>(xs: Stream<T>, ys: Stream<U>, f: fn@(&T, &U) -> V) -> Stream<V> {
+pure fn map2<T,U,V>(xs: Stream<T>, ys: Stream<U>, f: fn@(&T, &U) -> V) -> Stream<V> {
   || match (xs(), ys()) {
     (Empty, _) | (_, Empty) => Empty,
     (Cons(x,xs), Cons(y,ys)) => Cons(f(&x,&y), map2(xs, ys, f)),
@@ -82,10 +84,10 @@ fn map2<T,U,V>(xs: Stream<T>, ys: Stream<U>, f: fn@(&T, &U) -> V) -> Stream<V> {
 fn map2_consume<T:Copy,U:Copy,V>
   (xs: Stream<T>, ys: Stream<U>, f: fn@(T, U) -> V) -> Stream<V>
 {
-  do map2(xs,ys) |x,y| { f(*x, *y) }
+  map2(xs, ys, |x,y| f(*x, *y))
 }
 
-fn unfold<T:Copy Owned, U:Copy Owned>
+pure fn unfold<T:Copy Owned, U:Copy Owned>
   (seed: T, gen: fn@(T) -> Option<(T,U)>) -> Stream<U>
 {
   || match gen(seed) {
@@ -94,7 +96,7 @@ fn unfold<T:Copy Owned, U:Copy Owned>
   }
 }
 
-fn unfold_memoized<T:Owned,U:Copy Owned>
+pure fn unfold_memoized<T:Owned,U:Copy Owned>
   (seed: T, gen: fn@(T) -> Option<(T,U)>) -> Stream<U>
 {
   let cell: @mut Either<T, Stream_<U>> = @mut Left(move seed);
@@ -117,6 +119,7 @@ fn unfold_memoized<T:Owned,U:Copy Owned>
   }
 }
 
+// should be pure but can't
 fn memoize<T:Copy Owned>(s: Stream<T>) -> Stream<T> {
   do unfold_memoized(s) |str| {
     match str() {
@@ -130,13 +133,13 @@ fn memoize<T:Copy Owned>(s: Stream<T>) -> Stream<T> {
 // ---------- Infinite vectors ----------
 type Infvec<T> = fn@(uint) -> T;
 
-fn infvec_to_generator<T>(f: Infvec<T>) -> Generator<T> {
+pure fn infvec_to_generator<T>(f: Infvec<T>) -> Generator<T> {
   let i = @mut 0;
   || { let x = f(*i); *i += 1; Some(move x) }
 }
 
-fn infvec_to_stream<T>(f: Infvec<T>) -> Stream<T> {
-  fn iv2s_from<T>(f: Infvec<T>, from: uint) -> Stream<T> {
+pure fn infvec_to_stream<T>(f: Infvec<T>) -> Stream<T> {
+  pure fn iv2s_from<T>(f: Infvec<T>, from: uint) -> Stream<T> {
     || Cons(f(from), iv2s_from(f, from+1))
   }
   iv2s_from(f, 0)
