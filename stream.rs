@@ -3,22 +3,22 @@ use either::{Either,Left,Right};
 
 extern mod std;
 
-// this should probably be "pure fn@() -> Stream_<T>", but until it's easy to
+// This should probably be "pure fn@() -> Stream_<T>", but until it's easy to
 // make pure lambdas, this would be *extremely* obnoxious.
 type Stream<T> = fn@() -> Stream_<T>;
 enum Stream_<T> {
+  Cons(T, Stream<T>),
   Empty,
-  Cons(T, Stream<T>)
 }
 
 pure fn cons<T:Copy Owned>(x: T, xs: Stream<T>) -> Stream<T> {
-  fn@() -> Stream_<T> { Cons(x,xs) }
+  || Cons(x,xs)
 }
 
 pure fn tail<T>(s: Stream<T>) -> Stream<T> {
   || match s() {
+    Cons(_, rest) => rest(),
     Empty => fail ~"tried to take tail of empty stream",
-    Cons(_, rest) => rest()
   }
 }
 
@@ -56,17 +56,17 @@ fn eachi<T>(s: Stream<T>, f: fn&(uint, &T) -> bool) {
 
 pure fn filter<T>(s: Stream<T>, pred: fn@(&T) -> bool) -> Stream<T> {
   || match move s() {
-    Empty => Empty,
     Cons(move x, move xs) =>
       if pred(&x) { Cons(move x, filter(xs, pred)) }
-      else { filter(xs, pred)() }
+      else { filter(xs, pred)() },
+    Empty => Empty,
   }
 }
 
 pure fn map<T,U>(s: Stream<T>, f: fn@(&T) -> U) -> Stream<U> {
   || match s() {
-    Empty => Empty,
     Cons(x, xs) => Cons(f(&x), map(xs,f)),
+    Empty => Empty,
   }
 }
 
@@ -74,10 +74,12 @@ fn map_consume<T:Copy,U>(s: Stream<T>, f: fn@(T) -> U) -> Stream<U> {
   map(s, |x| f(*x))
 }
 
-pure fn map2<T,U,V>(xs: Stream<T>, ys: Stream<U>, f: fn@(&T, &U) -> V) -> Stream<V> {
+pure fn map2<T,U,V>
+  (xs: Stream<T>, ys: Stream<U>, f: fn@(&T, &U) -> V) -> Stream<V>
+{
   || match (xs(), ys()) {
-    (Empty, _) | (_, Empty) => Empty,
     (Cons(x,xs), Cons(y,ys)) => Cons(f(&x,&y), map2(xs, ys, f)),
+    (Empty, _) | (_, Empty) => Empty,
   }
 }
 
@@ -91,8 +93,8 @@ pure fn unfold<T:Copy Owned, U:Copy Owned>
   (seed: T, gen: fn@(T) -> Option<(T,U)>) -> Stream<U>
 {
   || match gen(seed) {
-    None => Empty,
     Some((next,elt)) => Cons(elt, unfold(next, gen)),
+    None => Empty,
   }
 }
 
