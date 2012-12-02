@@ -20,6 +20,11 @@ fn tail<T>(s: Stream<T>) -> Stream<T> {
   }
 }
 
+// do we really need the Owned bound?
+fn vec_to_stream<T:Copy Owned>(f: @[T]) -> Stream<T> {
+  generator_to_stream(vec_to_generator(f))
+}
+
 fn fix<T:Copy Owned>(f: fn@(s: Stream<T>) -> Stream<T>) -> Stream<T> {
   let g = @mut || fail;
   *g = memoize(|| { f(*g)() });
@@ -121,10 +126,39 @@ fn memoize<T:Copy Owned>(s: Stream<T>) -> Stream<T> {
   }
 }
 
-// Stateful generators
+
+// ---------- Infinite vectors ----------
+type Infvec<T> = fn@(uint) -> T;
+
+fn infvec_to_generator<T>(f: Infvec<T>) -> Generator<T> {
+  let i = @mut 0;
+  || { let x = f(*i); *i += 1; Some(move x) }
+}
+
+fn infvec_to_stream<T>(f: Infvec<T>) -> Stream<T> {
+  fn iv2s_from<T>(f: Infvec<T>, from: uint) -> Stream<T> {
+    || Cons(f(from), iv2s_from(f, from+1))
+  }
+  iv2s_from(f, 0)
+}
+
+
+// ---------- Stateful generators ----------
 use pipes::{Port, Chan}; //TODO?: custom proto
 
 type Generator<T> = fn@() -> Option<T>;
+
+fn vec_to_generator<T:Copy Owned>(v: @[T]) -> Generator<T> {
+  let i = @mut 0;
+  || {
+    if *i >= v.len() { None }
+    else {
+      let x = v[*i];
+      *i += 1;
+      Some(x)
+    }
+  }
+}
 
 fn generator_to_stream<T:Copy Owned>(g: Generator<T>) -> Stream<T> {
   unfold_memoized(g, |g| option::map_consume(g(), |x| (g,x)))
