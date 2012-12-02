@@ -13,6 +13,12 @@ fn genfibs(fibs: Stream<uint>) -> Stream<uint> {
   cons(1, cons(1, map2_consume(fibs, tail(fibs), |x,y| x + y)))
 }
 
+fn print_fibs() {
+  for each(fix(genfibs)) |x| {
+    io::println(fmt!("%u", *x));
+  }
+}
+
 // Sieve of Eratosthenes
 fn eratosthenes(s: Stream<uint>) -> Stream<uint> {
   || match s() {
@@ -22,17 +28,16 @@ fn eratosthenes(s: Stream<uint>) -> Stream<uint> {
     }
   }
 }
-                 
 
-fn main() {
-  let _fibs = fix(genfibs);
-  // for each(fibs) |x| {
-  //   io::println(fmt!("%u", *x));
-  // }
-
+fn print_primes() {
   let odds = map_consume(nats_from(1), |x| 2*x + 1);
   let primes = cons(2, eratosthenes(odds));
   for each(primes) |p| {
     io::println(fmt!("%u", *p));
   }
+}
+
+fn main() {
+  print_fibs();
+  //print_primes();
 }
