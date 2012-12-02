@@ -39,6 +39,23 @@ fn each<T>(s_: Stream<T>, f: fn&(&T) -> bool) {
   }
 }
 
+fn eachi<T>(s: Stream<T>, f: fn&(uint, &T) -> bool) {
+  let mut i = 0;
+  for each(s) |x| {
+    if !f(i,x) { return; }
+    i += 1;
+  }
+}
+
+fn filter<T>(s: Stream<T>, pred: fn@(&T) -> bool) -> Stream<T> {
+  || match move s() {
+    Empty => Empty,
+    Cons(move x, move xs) =>
+      if pred(&x) { Cons(move x, filter(xs, pred)) }
+      else { filter(xs, pred)() }
+  }
+}
+
 fn map<T,U>(s: Stream<T>, f: fn@(&T) -> U) -> Stream<U> {
   || match s() {
     Empty => Empty,
