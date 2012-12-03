@@ -3,7 +3,6 @@ use io::{Reader,ReaderUtil,Writer,WriterUtil};
 use to_str::{ToStr};
 use option::{Option,map_consume};
 use char::{is_whitespace,is_digit};
-use tuple::{CopyableTuple};
 
 // ---------- Untyped lambda calculus language ----------
 enum Term {
