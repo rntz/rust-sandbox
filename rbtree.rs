@@ -8,6 +8,10 @@ struct Node<K,V,T> {
   left: T, right: T,
 }
 
+fn Node<K,V,T>(k: K, v: V, l: T, r: T) -> Node<K,V,T> {
+  Node{key: k, value: v, left: l, right: r}
+}
+
 type Black<K,V> = Tree<K,V>;
 type Red<K,V> = Node<K, V, Black<K,V>>;
 
@@ -74,13 +78,13 @@ priv fn insert_red<K:Eq Ord,V>
 {
   let Node{key: k, value: v, left: l, right: r} = t;
   match compare(&key, &k) {
-    EQ => RIRed(Node{key: k, value: value, left: l, right: r}),
+    EQ => RIRed(Node(k, value, l, r)),
     LT => match insert_black(l, key, value) {
-      Black(t) => RIRed(Node{key: k, value: v, left: t, right: r}),
+      Black(t) => RIRed(Node(k, v, t, r)),
       Red(lnew) => RIBlackLeft(k, v, lnew, r),
     },
     GT => match insert_black(r, key, value) {
-      Black(t) => RIRed(Node{key: k, value: v, left: l, right: t}),
+      Black(t) => RIRed(Node(k, v, l, t)),
       Red(rnew) => RIBlackRight(k, v, l, rnew),
     },
   }
@@ -90,22 +94,19 @@ priv fn insert_black<K:Eq Ord,V>
   (t: Tree<K,V>, key: K, value: V) -> BlackChild<K,V>
 {
   match t {
-    Empty => Black(Tree(~Node {
-      key: key, value: value,
-      left: Black(Empty), right: Black(Empty)
-    })),
+    Empty => Black(Tree(~Node(key, value, Black(Empty), Black(Empty)))),
 
-    Tree(~Node{key: k, value: _v, left: l, right: r}) => {
+    Tree(~Node{key: k, value: v, left: l, right: r}) => {
       match compare(&key, &k) {
-        EQ => Black(Tree(~Node {
-          key: k, value: value,
-          left: l, right: r
-        })),
+        EQ => Black(Tree(~Node(k, value, l, r))),
 
         LT => {
           match l {
-            Black(_st) => fail,
-            Red(*) => fail,
+            Black(lb) => Black(Tree(~Node(k,v, insert_black(lb,key,value), r))),
+            Red(lr) => match insert_red(lr, key, value) {
+              RIRed(lnew) => Black(Tree(~Node(k,v,Red(lnew),r))),
+              _ => fail
+            },
           }
         }
 
@@ -118,12 +119,8 @@ priv fn insert_black<K:Eq Ord,V>
 fn insert<K:Eq Ord,V>(t: Tree<K,V>, key: K, value: V) -> Tree<K,V> {
   match insert_black(t, key, value) {
     Black(t) => t,
-    Red(Node{key: k, value: v, left: l, right: r}) => {
-      Tree(~Node{
-        key: k, value: v,
-        left: Black(l), right: Black(r),
-      })
-    }
+    Red(Node{key: k, value: v, left: l, right: r}) =>
+      Tree(~Node(k, v, Black(l), Black(r))),
   }
 }
 
