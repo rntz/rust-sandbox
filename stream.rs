@@ -101,8 +101,8 @@ pure fn unfold<T:Copy Owned, U:Copy Owned>
 pure fn unfold_memoized<T:Owned,U:Copy Owned>
   (seed: T, gen: fn@(T) -> Option<(T,U)>) -> Stream<U>
 {
-  let cell: @mut Either<T, Stream_<U>> = @mut Left(move seed);
-  || {
+  let cell: ~mut Either<T, Stream_<U>> = ~mut Left(move seed);
+  |move cell| {
     // hack.
     let mut x = Right(Empty);
     x <-> *cell;
@@ -136,8 +136,8 @@ fn memoize<T:Copy Owned>(s: Stream<T>) -> Stream<T> {
 type Infvec<T> = fn@(uint) -> T;
 
 pure fn infvec_to_generator<T>(f: Infvec<T>) -> Generator<T> {
-  let i = @mut 0;
-  || { let x = f(*i); *i += 1; Some(move x) }
+  let i = ~mut 0;
+  |move i| { let x = f(*i); *i += 1; Some(move x) }
 }
 
 pure fn infvec_to_stream<T>(f: Infvec<T>) -> Stream<T> {
@@ -154,8 +154,8 @@ use pipes::{Port, Chan}; //TODO?: custom proto
 type Generator<T> = fn@() -> Option<T>;
 
 fn vec_to_generator<T:Copy Owned>(v: @[T]) -> Generator<T> {
-  let i = @mut 0;
-  || {
+  let i = ~mut 0;
+  |move i| {
     if *i >= v.len() { None }
     else {
       let x = v[*i];
