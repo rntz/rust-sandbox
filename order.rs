@@ -1,6 +1,6 @@
 use cmp::{Eq, Ord};
 
-enum Order { LT, EQ, GT }
+pub enum Order { LT, EQ, GT }
 
 impl Order: ToStr {
     pure fn to_str() -> ~str {
@@ -26,7 +26,7 @@ impl Order: Eq {
 
 }
 
-fn compare<T:Eq Ord>(x: &const T, y: &const T) -> Order {
+pub fn compare<T:Eq Ord>(x: &const T, y: &const T) -> Order {
     if x == y { EQ } else if x < y { LT } else { GT }
 }
 
