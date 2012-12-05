@@ -3,21 +3,12 @@ use cmp::{Eq, Ord};
 
 use order::{Order,LT,EQ,GT,compare};
 
-struct Node<K,V,T> {
-  key: K, value: V,
-  left: T, right: T,
-}
-
-fn Node<K,V,T>(k: K, v: V, l: T, r: T) -> Node<K,V,T> {
-  Node{key: k, value: v, left: l, right: r}
-}
-
 type Black<K,V> = Tree<K,V>;
-type Red<K,V> = Node<K, V, Black<K,V>>;
+type Red<K,V> = (K, V, Black<K,V>, Black<K,V>);
 
 // A black node.
 enum Tree<K,V> {
-  Tree(~Node<K, V, BlackChild<K,V>>),
+  Tree(~(K, V, BlackChild<K,V>, BlackChild<K,V>)),
   Empty,
 }
 
@@ -31,10 +22,10 @@ impl<K:Eq Ord, V:Copy> Tree<K,V> {
   fn lookup(&self, key: &K) -> Option<V> {
     match *self {
       Empty => None,
-      Tree(node) => match compare(key, &node.key) {
-          EQ => Some(node.value),
-          LT => node.left.lookup(key),
-          GT => node.right.lookup(key),
+      Tree(~(k,v,l,r)) => match compare(key, &k) {
+          EQ => Some(v),
+          LT => l.lookup(key),
+          GT => r.lookup(key),
       },
     }
   }
@@ -44,10 +35,10 @@ impl<K:Eq Ord, V:Copy> BlackChild<K,V> {
   fn lookup(&self, key: &K) -> Option<V> {
     match *self {
       Black(t) => t.lookup(key),
-      Red(node) => match compare(key, &node.key) {
-        EQ => Some(node.value),
-        LT => node.left.lookup(key),
-        GT => node.right.lookup(key),
+      Red((k,v,l,r)) => match compare(key, &k) {
+        EQ => Some(v),
+        LT => l.lookup(key),
+        GT => r.lookup(key),
       },
     }
   }
@@ -76,15 +67,15 @@ enum RedInsertResult<K,V> {
 priv fn insert_red<K:Eq Ord,V>
   (t: Red<K,V>, key: K, value: V) -> RedInsertResult<K,V>
 {
-  let Node{key: k, value: v, left: l, right: r} = t;
+  let (k, v, l, r) = t;
   match compare(&key, &k) {
-    EQ => RIRed(Node(k, value, l, r)),
+    EQ => RIRed((k, value, l, r)),
     LT => match insert_black(l, key, value) {
-      Black(t) => RIRed(Node(k, v, t, r)),
+      Black(t) => RIRed((k, v, t, r)),
       Red(lnew) => RIBlackLeft(k, v, lnew, r),
     },
     GT => match insert_black(r, key, value) {
-      Black(t) => RIRed(Node(k, v, l, t)),
+      Black(t) => RIRed((k, v, l, t)),
       Red(rnew) => RIBlackRight(k, v, l, rnew),
     },
   }
@@ -94,17 +85,17 @@ priv fn insert_black<K:Eq Ord,V>
   (t: Tree<K,V>, key: K, value: V) -> BlackChild<K,V>
 {
   match t {
-    Empty => Black(Tree(~Node(key, value, Black(Empty), Black(Empty)))),
+    Empty => Black(Tree(~(key, value, Black(Empty), Black(Empty)))),
 
-    Tree(~Node{key: k, value: v, left: l, right: r}) => {
+    Tree(~(k, v, l, r)) => {
       match compare(&key, &k) {
-        EQ => Black(Tree(~Node(k, value, l, r))),
+        EQ => Black(Tree(~(k, value, l, r))),
 
         LT => {
           match l {
-            Black(lb) => Black(Tree(~Node(k,v, insert_black(lb,key,value), r))),
+            Black(lb) => Black(Tree(~(k,v, insert_black(lb,key,value), r))),
             Red(lr) => match insert_red(lr, key, value) {
-              RIRed(lnew) => Black(Tree(~Node(k,v,Red(lnew),r))),
+              RIRed(lnew) => Black(Tree(~(k,v,Red(lnew),r))),
               _ => fail
             },
           }
@@ -119,8 +110,8 @@ priv fn insert_black<K:Eq Ord,V>
 fn insert<K:Eq Ord,V>(t: Tree<K,V>, key: K, value: V) -> Tree<K,V> {
   match insert_black(t, key, value) {
     Black(t) => t,
-    Red(Node{key: k, value: v, left: l, right: r}) =>
-      Tree(~Node(k, v, Black(l), Black(r))),
+    Red((k, v, l, r)) =>
+      Tree(~(k, v, Black(l), Black(r))),
   }
 }
 
