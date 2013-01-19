@@ -1,4 +1,6 @@
-use core::iter::{Buildable,build_sized,build};
+//use core::iter::{Buildable,build_sized,build};
+use core::iter::{Buildable,build};
+use core::iter::Buildable::build_sized;
 
 pub trait SeqView<A>: Index<uint,A> {
   pure fn len(&self) -> uint;
@@ -9,7 +11,7 @@ impl<A> &[A]: SeqView<A> {
 }
 
 // Trait for immutable ("value-like") finite sequence types
-pub trait Seq<A>: SeqView<A>, Buildable<A> {
+pub trait Seq<A>: SeqView<A> Buildable<A> {
   // TODO: default implementations for *everything*
   pure fn append(self, other: self) -> self;
   pure fn filter(self, fn&(&A) -> bool) -> self;
@@ -71,7 +73,7 @@ impl<A:Copy> @[A]: Seq<A> {
 
   pure fn filter(self, pred: fn&(&A) -> bool) -> @[A] {
     do build |push| {
-      for self.each |x| {
+      for vec::each(self) |x| {
         if pred(x) { push(*x) }
       }
     }

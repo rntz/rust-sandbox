@@ -26,7 +26,7 @@ impl Order: Eq {
 
 }
 
-pub fn compare<T:Eq Ord>(x: &const T, y: &const T) -> Order {
+pub pure fn compare<T:Eq Ord>(x: &const T, y: &const T) -> Order {
     if x == y { EQ } else if x < y { LT } else { GT }
 }
 

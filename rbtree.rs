@@ -19,11 +19,11 @@ enum BlackChild<K,V> {
 }
 
 impl<K:Eq Ord, V:Copy> Tree<K,V> {
-  fn lookup(&self, key: &K) -> Option<V> {
-    match *self {
-      Empty => None,
-      Tree(~(k,v,l,r)) => match compare(key, &k) {
-          EQ => Some(v),
+  pure fn lookup(&self, key: &K) -> Option<V> {
+    match self {
+      &Empty => None,
+      &Tree(~(ref k, ref v, ref l, ref r)) => match compare(key, k) {
+          EQ => Some(copy *v),
           LT => l.lookup(key),
           GT => r.lookup(key),
       },
@@ -32,11 +32,11 @@ impl<K:Eq Ord, V:Copy> Tree<K,V> {
 }
 
 impl<K:Eq Ord, V:Copy> BlackChild<K,V> {
-  fn lookup(&self, key: &K) -> Option<V> {
-    match *self {
-      Black(t) => t.lookup(key),
-      Red((k,v,l,r)) => match compare(key, &k) {
-        EQ => Some(v),
+  pure fn lookup(&self, key: &K) -> Option<V> {
+    match self {
+      &Black(ref t) => t.lookup(key),
+      &Red((ref k, ref v, ref l, ref r)) => match compare(key, k) {
+        EQ => Some(copy *v),
         LT => l.lookup(key),
         GT => r.lookup(key),
       },

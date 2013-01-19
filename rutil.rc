@@ -9,10 +9,14 @@
 #[license = "WTFPL 2.0"];
 #[crate_type = "lib"];
 
-extern mod core(vers = "0.5");
+extern mod core;
+extern mod std;
+use core::*;
 
 pub mod stream;
 pub mod iter;
 pub mod order;
 pub mod seq;
 pub mod rbtree;
+pub mod parse;
+pub mod queue;
