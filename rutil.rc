@@ -20,3 +20,4 @@ pub mod seq;
 pub mod rbtree;
 pub mod parse;
 pub mod queue;
+pub mod linear_deque;

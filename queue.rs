@@ -6,6 +6,8 @@ struct Queue_<T> {
   mut queue: ~[T]
 }
 
+pub fn Queue<T>() -> Queue<T> { Queue_{ queue: ~[] } }
+
 pub impl<T> Queue<T> {
   fn push(self, elem: T) {
     vec::unshift(&mut self.queue, elem)
