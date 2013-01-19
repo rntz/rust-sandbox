@@ -51,6 +51,29 @@ impl Scope {
   }
 }
 
+// ---------- STRINGIFYING & PARSING ----------
+impl Val: ToStr {
+  pure fn to_str() -> ~str {
+    pure fn list_to_str(v: Val) -> ~str {
+      match v {
+        Cons(@x, @Nil) => x.to_str(),
+        Cons(@x, @y) => x.to_str() + " " + list_to_str(y),
+        Nil => ~"",
+        _ => ~". " + v.to_str(),
+      }
+    }
+    match self {
+      Nil => ~"nil",
+      Cons(*) => ~"(" + list_to_str(self) + ")",
+      Num(i) => i.to_str(),
+      Str(s) => fmt!("\"%s\"", s.escape_default()),
+      Sym(s) => s.to_str(),
+      Fn(*) => ~"<function>",
+      Builtin(_) => ~"<builtin>",
+    }
+  }
+}
+
 // ---------- EVALUATOR ----------
 struct Engine {}                //global state
 
