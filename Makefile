@@ -1,4 +1,5 @@
-RUSTCFLAGS:=-g -L .
+#RUSTCFLAGS:=-g -L .
+RUSTCFLAGS:=-L .
 
 %: %.rs
 	rustc $(RUSTCFLAGS) $<

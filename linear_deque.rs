@@ -9,6 +9,8 @@ use option::Option;
 
 pub struct Deque<T>(~[T]);
 
+pub fn new_deque<T>() -> Deque<T> { Deque(~[]) }
+
 pub fn push<T>(deq: Deque<T>, elem: T) -> Deque<T> {
   let mut deq = deq;
   (*deq).push(elem);
